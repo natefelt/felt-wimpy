@@ -49,4 +49,8 @@ pkgs: {
 
   # Non-redistributable packages
   pico8 = pkgs.callPackage ./pico8 { };
+
+  # Personal packages
+  exactaudiocopy = pkgs.callPackage ./exactaudiocopy { };
+  vuescan = pkgs.callPackage ./vuescan { };
 }
