@@ -8,13 +8,13 @@ let
   inherit (config.noughty) host;
 in
 lib.mkIf host.is.workstation {
-  claude-code.lspServers.dart = {
-    command = "${pkgs.dart}/bin/dart";
-    args = [ "language-server" ];
-    extensionToLanguage = {
-      ".dart" = "dart";
-    };
-  };
+  # claude-code.lspServers.dart = {
+  #   command = "${pkgs.dart}/bin/dart";
+  #   args = [ "language-server" ];
+  #   extensionToLanguage = {
+  #     ".dart" = "dart";
+  #   };
+  # };
 
   programs.fresh-editor.settings.lsp.dart = {
     command = "${pkgs.dart}/bin/dart";

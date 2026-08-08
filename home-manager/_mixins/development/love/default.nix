@@ -11,12 +11,12 @@ lib.mkIf
     "zannah"
   ])
   {
-    claude-code.lspServers.lua = {
-      command = lib.getExe pkgs.lua-language-server;
-      extensionToLanguage = {
-        ".lua" = "lua";
-      };
-    };
+    # claude-code.lspServers.lua = {
+    #   command = lib.getExe pkgs.lua-language-server;
+    #   extensionToLanguage = {
+    #     ".lua" = "lua";
+    #   };
+    # };
 
     programs.fresh-editor.settings.lsp.lua = {
       command = lib.getExe pkgs.lua-language-server;

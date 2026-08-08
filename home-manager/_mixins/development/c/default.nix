@@ -8,17 +8,17 @@ let
   inherit (config.noughty) host;
 in
 lib.mkIf host.is.workstation {
-  claude-code.lspServers.cpp = {
-    command = "${pkgs.clang-tools}/bin/clangd";
-    extensionToLanguage = {
-      ".c" = "c";
-      ".h" = "c";
-      ".cpp" = "cpp";
-      ".hpp" = "cpp";
-      ".cc" = "cpp";
-      ".cxx" = "cpp";
-    };
-  };
+  # claude-code.lspServers.cpp = {
+  #   command = "${pkgs.clang-tools}/bin/clangd";
+  #   extensionToLanguage = {
+  #     ".c" = "c";
+  #     ".h" = "c";
+  #     ".cpp" = "cpp";
+  #     ".hpp" = "cpp";
+  #     ".cc" = "cpp";
+  #     ".cxx" = "cpp";
+  #   };
+  # };
 
   programs.fresh-editor.settings.lsp = {
     c = {

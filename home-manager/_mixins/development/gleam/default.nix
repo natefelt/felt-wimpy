@@ -19,12 +19,12 @@ lib.mkIf host.is.workstation {
     ];
   };
 
-  claude-code.lspServers.gleam = {
-    command = lib.getExe pkgs.glas;
-    extensionToLanguage = {
-      ".gleam" = "gleam";
-    };
-  };
+  # claude-code.lspServers.gleam = {
+  #   command = lib.getExe pkgs.glas;
+  #   extensionToLanguage = {
+  #     ".gleam" = "gleam";
+  #   };
+  # };
 
   programs.fresh-editor.settings.lsp.gleam = {
     command = lib.getExe pkgs.glas;

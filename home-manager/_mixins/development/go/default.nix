@@ -30,12 +30,12 @@ lib.mkIf host.is.workstation {
     };
   };
 
-  claude-code.lspServers.go = {
-    command = lib.getExe pkgs.gopls;
-    extensionToLanguage = {
-      ".go" = "go";
-    };
-  };
+  # claude-code.lspServers.go = {
+  #   command = lib.getExe pkgs.gopls;
+  #   extensionToLanguage = {
+  #     ".go" = "go";
+  #   };
+  # };
 
   programs.fresh-editor.settings.lsp.go = [
     {

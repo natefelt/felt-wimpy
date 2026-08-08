@@ -24,14 +24,14 @@ in
       ];
   };
 
-  claude-code.lspServers = lib.mkIf (!host.is.server && config.programs.claude-code.enable) {
-    nix = {
-      command = lib.getExe pkgs.nixd;
-      extensionToLanguage = {
-        ".nix" = "nix";
-      };
-    };
-  };
+  # claude-code.lspServers = lib.mkIf (!host.is.server && config.programs.claude-code.enable) {
+  #   nix = {
+  #     command = lib.getExe pkgs.nixd;
+  #     extensionToLanguage = {
+  #       ".nix" = "nix";
+  #     };
+  #   };
+  # };
 
   programs.fresh-editor.settings.lsp.nix = lib.mkIf (!host.is.server) {
     command = lib.getExe pkgs.nil;

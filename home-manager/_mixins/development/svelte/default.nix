@@ -38,13 +38,13 @@ lib.mkIf host.is.workstation {
     };
   };
 
-  claude-code.lspServers.svelte = {
-    command = lib.getExe pkgs.svelte-language-server;
-    args = [ "--stdio" ];
-    extensionToLanguage = {
-      ".svelte" = "svelte";
-    };
-  };
+  # claude-code.lspServers.svelte = {
+  #   command = lib.getExe pkgs.svelte-language-server;
+  #   args = [ "--stdio" ];
+  #   extensionToLanguage = {
+  #     ".svelte" = "svelte";
+  #   };
+  # };
 
   programs.fresh-editor.settings.lsp.svelte = {
     command = lib.getExe pkgs.svelte-language-server;

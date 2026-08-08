@@ -47,16 +47,16 @@ in
     };
   };
 
-  claude-code.lspServers = lib.mkIf (!host.is.server && config.programs.claude-code.enable) {
-    yaml = {
-      command = lib.getExe pkgs.yaml-language-server;
-      args = [ "--stdio" ];
-      extensionToLanguage = {
-        ".yaml" = "yaml";
-        ".yml" = "yaml";
-      };
-    };
-  };
+  # claude-code.lspServers = lib.mkIf (!host.is.server && config.programs.claude-code.enable) {
+  #   yaml = {
+  #     command = lib.getExe pkgs.yaml-language-server;
+  #     args = [ "--stdio" ];
+  #     extensionToLanguage = {
+  #       ".yaml" = "yaml";
+  #       ".yml" = "yaml";
+  #     };
+  #   };
+  # };
 
   programs.fresh-editor.settings.lsp.yaml = lib.mkIf (!host.is.server) {
     command = lib.getExe pkgs.yaml-language-server;

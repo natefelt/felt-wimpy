@@ -36,17 +36,17 @@ in
     };
   };
 
-  claude-code.lspServers = lib.mkIf (!host.is.server && config.programs.claude-code.enable) {
-    bash = {
-      command = lib.getExe pkgs.bash-language-server;
-      args = [ "start" ];
-      extensionToLanguage = {
-        ".sh" = "shellscript";
-        ".bash" = "shellscript";
-        ".zsh" = "shellscript";
-      };
-    };
-  };
+  # claude-code.lspServers = lib.mkIf (!host.is.server && config.programs.claude-code.enable) {
+  #   bash = {
+  #     command = lib.getExe pkgs.bash-language-server;
+  #     args = [ "start" ];
+  #     extensionToLanguage = {
+  #       ".sh" = "shellscript";
+  #       ".bash" = "shellscript";
+  #       ".zsh" = "shellscript";
+  #     };
+  #   };
+  # };
 
   programs.fresh-editor.settings.lsp.bash = lib.mkIf (!host.is.server) {
     command = lib.getExe pkgs.bash-language-server;

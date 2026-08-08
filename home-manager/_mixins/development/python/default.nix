@@ -18,15 +18,15 @@ lib.mkIf host.is.workstation {
     ];
   };
 
-  claude-code.lspServers.python = {
-    command = "${pkgs.basedpyright}/bin/basedpyright-langserver";
-    args = [ "--stdio" ];
-    extensionToLanguage = {
-      ".py" = "python";
-      ".pyi" = "python";
-      ".pyw" = "python";
-    };
-  };
+  # claude-code.lspServers.python = {
+  #   command = "${pkgs.basedpyright}/bin/basedpyright-langserver";
+  #   args = [ "--stdio" ];
+  #   extensionToLanguage = {
+  #     ".py" = "python";
+  #     ".pyi" = "python";
+  #     ".pyw" = "python";
+  #   };
+  # };
 
   programs.fresh-editor.settings.lsp.python = {
     command = "${pkgs.basedpyright}/bin/basedpyright-langserver";

@@ -323,14 +323,14 @@ lib.mkMerge [
       };
     };
 
-    sops = {
-      secrets = {
-        act-env = {
-          path = "${config.xdg.configHome}/act/secrets";
-          sopsFile = ../../../../secrets/act.yaml;
-          mode = "0660";
-        };
-      };
-    };
+    # sops = {
+    #   secrets = {
+    #     act-env = {
+    #       path = "${config.xdg.configHome}/act/secrets";
+    #       sopsFile = ../../../../secrets/act.yaml;
+    #       mode = "0660";
+    #     };
+    #   };
+    # };
   })
 ]

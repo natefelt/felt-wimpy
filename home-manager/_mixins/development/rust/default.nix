@@ -14,12 +14,12 @@ lib.mkIf host.is.workstation {
     ];
   };
 
-  claude-code.lspServers.rust = {
-    command = lib.getExe pkgs.rust-analyzer;
-    extensionToLanguage = {
-      ".rs" = "rust";
-    };
-  };
+  # claude-code.lspServers.rust = {
+  #   command = lib.getExe pkgs.rust-analyzer;
+  #   extensionToLanguage = {
+  #     ".rs" = "rust";
+  #   };
+  # };
 
   programs.fresh-editor.settings.lsp.rust = {
     command = lib.getExe pkgs.rust-analyzer;
