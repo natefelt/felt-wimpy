@@ -82,7 +82,7 @@ let
         }
       '';
 in
-lib.mkIf host.is.workstation {
+lib.mkIf (host.desktop != "gnome") {
   # Use Cage to run regreet
   environment = {
     etc = {
