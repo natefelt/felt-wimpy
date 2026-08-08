@@ -285,6 +285,66 @@ scale = 1.25
 workspaces = [9]
 position = { x = 1920, y = 0 }
 
+[kratos]
+kind = "computer"
+platform = "x86_64-linux"
+formFactor = "desktop"
+desktop = "gnome"
+username = "nate"
+tags = ["calibre", "davinci", "dropbox", "photography", "ripper", "inference", "scrutiny", "zsa", "docker"]
+
+[kratos.gpu]
+vendors = ["amd"]
+
+[kratos.gpu.compute]
+vendor = "amd"
+vram = 20
+
+[kratos.keyboard]
+layout = "us"
+
+[kratos.network]
+tailNet = "bunny-paradise.ts.net"
+
+[[kratos.displays]]
+output = "DP-1"
+primary = true
+width = 3440
+height = 1440
+refresh = 120
+position = { x = 0, y = 0 }
+workspaces = [1, 2, 3, 4, 6, 7, 8, 0]
+
+[[kratos.displays]]
+output = "HDMI-A-1"
+width = 1920
+height = 1080
+position = { x = 0, y = 706 }
+workspaces = [5, 9]
+
+[mercury]
+kind = "computer"
+platform = "x86_64-linux"
+formFactor = "laptop"
+tags = ["thinkpad", "fprintd", "zsa"]
+
+[mercury.gpu]
+vendors = ["intel"]
+
+[mercury.keyboard]
+layout = "us"
+
+[mercury.network]
+tailNet = "bunny-paradise.ts.net"
+
+[[mercury.displays]]
+output = "eDP-1"
+width = 1920
+height = 1080
+primary = true
+workspaces = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+position = { x = 0, y = 0 }
+
 # Gaming - non-standard username and desktop, so both explicit
 
 [steamdeck]
