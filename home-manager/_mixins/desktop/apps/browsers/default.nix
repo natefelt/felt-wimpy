@@ -7,7 +7,7 @@ let
   inherit (config.noughty) host;
   isWorkspace = noughtyLib.hostHasTag "workspace";
   basicExtensions = [
-    { id = "hdokiejnpimakedhajhdlcegeplioahd"; } # LastPass
+    { id = "nngceckbapebfimnlniiiahkandclblb"; } # Bitwarden
   ];
   advancedExtensions = [
     { id = "cjpalhdlnbpafiamejdnhcphjbkeiagm"; } # uBlock Origin
@@ -17,8 +17,8 @@ let
     { id = "gebbhagfogifgggkldgodflihgfeippi"; } # Return YouTube Dislike
     { id = "fdpohaocaechififmbbbbbknoalclacl"; } # GoFullPage
     { id = "clpapnmmlmecieknddelobgikompchkk"; } # Disable Automatic Gain Control
-    { id = "cdglnehniifkbagbbombnjghhcihifij"; } # Kagi
-    { id = "dpaefegpjhgeplnkomgbcmmlffkijbgp"; } # Kagi Summariser
+    #{ id = "cdglnehniifkbagbbombnjghhcihifij"; } # Kagi
+    #{ id = "dpaefegpjhgeplnkomgbcmmlffkijbgp"; } # Kagi Summariser
     #{ id = "bkkmolkhemgaeaeggcmfbghljjjoofoh"; } # Catppuccin Mocha
     { id = "lnjaiaapbakfhlbjenjkhffcdpoompki"; } # Catppuccin Web file explorer icons
     { id = "clngdbkpkpeebahjckkjfobafhncgmne"; } # Stylus

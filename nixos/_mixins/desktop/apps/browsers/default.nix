@@ -14,6 +14,7 @@ let
     "louise"
   ];
   forMartin = [ "martin" ];
+  forNate = [ "nate" ];
 
   # Strix Halo (AMD Ryzen AI Max 300, dcn35) workaround: disable hardware video
   # decode/encode in Chromium-family browsers. Hardware-accelerated video on
@@ -38,31 +39,39 @@ let
     brave
     pkgs.mullvad-browser
   ];
+  natePackages = [
+    brave
+  ];
   essentialExtensions = [
-    "hdokiejnpimakedhajhdlcegeplioahd" # LastPass
+    "nngceckbapebfimnlniiiahkandclblb" # Bitwarden
   ];
   extraExtensions = [
-    "cjpalhdlnbpafiamejdnhcphjbkeiagm" # uBlock Origin
     "lodbfhdipoipcjmlebjbgmmgekckhpfb" # Harper
+    "cjpalhdlnbpafiamejdnhcphjbkeiagm" # uBlock Origin
     "mdjildafknihdffpkfmmpnpoiajfjnjd" # Consent-O-Matic
     "mnjggcdmjocbbbhaepdhchncahnbgone" # SponsorBlock for YouTube
     "gebbhagfogifgggkldgodflihgfeippi" # Return YouTube Dislike
     "fdpohaocaechififmbbbbbknoalclacl" # GoFullPage
-    "clpapnmmlmecieknddelobgikompchkk" # Disable Automatic Gain Control
-    "cdglnehniifkbagbbombnjghhcihifij" # Kagi
-    "dpaefegpjhgeplnkomgbcmmlffkijbgp" # Kagi Summariser
-    #"bkkmolkhemgaeaeggcmfbghljjjoofoh" # Catppuccin Mocha
+    "bkkmolkhemgaeaeggcmfbghljjjoofoh" # Catppuccin Mocha
     "lnjaiaapbakfhlbjenjkhffcdpoompki" # Catppuccin Web file explorer icons
     "clngdbkpkpeebahjckkjfobafhncgmne" # Stylus
-    "mdpfkohgfpidohkakdbpmnngaocglmhl" # Disable Ctrl + Scroll Zoom
+    "ekhagklcjbdpajgpjgmbionohlpdbjgc" # Zotero Connector
+    "gcknhkkoolaabfmlnjonogaaifnjlfnp" # FoxyProxy
+    "hmbgmokpddhjjncclckdfnolbhfjnoam" # SearXNG
+    "pnidmkljnhbjfffciajlcpeldoljnidn" # Linkwarden
+    "kgcjekpmcjjogibpjebkhaanilehneje" # Karakeep
   ];
 in
 {
-  imports = [ ./martin.nix ];
+  imports = [
+    ./martin.nix
+    ./nate.nix
+  ];
   config = lib.mkIf (host.is.workstation && !isWorkspace) {
     environment.systemPackages =
       lib.optionals (builtins.elem username forFamily) familyPackages
-      ++ lib.optionals (builtins.elem username forMartin) martinPackages;
+      ++ lib.optionals (builtins.elem username forMartin) martinPackages
+      ++ lib.optionals (builtins.elem username forNate) natePackages;
 
     # TODO: Configure Microsoft Edge policy
     # - https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies
@@ -161,7 +170,7 @@ in
       firefox = {
         enable = true;
         languagePacks = [
-          "en-GB"
+          # "en-GB"
           "en-US"
         ];
         package = pkgs.firefox;
@@ -227,8 +236,8 @@ in
           };
           # Check about:support for extension/add-on ID strings.
           ExtensionSettings = {
-            "support@lastpass.com" = {
-              install_url = "https://addons.mozilla.org/firefox/downloads/latest/lastpass-password-manager/latest.xpi";
+            "{446900e4-71c2-419f-a6a7-df9c091e268b}" = {
+              install_url = "https://addons.mozilla.org/firefox/downloads/latest/bitwarden-password-manager/latest.xpi";
               installation_mode = "force_installed";
             };
           };
