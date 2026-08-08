@@ -8,7 +8,7 @@
 let
   inherit (config.noughty) host;
 in
-lib.mkIf (noughtyLib.isUser [ "martin" ] && host.is.workstation) {
+lib.mkIf ((noughtyLib.isUser [ "martin" ] || noughtyLib.isUser [ "nate" ]) && host.is.workstation) {
   home = {
     packages = [
       pkgs.heynote

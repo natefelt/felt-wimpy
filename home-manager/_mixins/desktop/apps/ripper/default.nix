@@ -9,7 +9,6 @@ let
   host = config.noughty.host;
 in
 {
-
   home.packages =
     with pkgs;
     lib.optionals (host.is.workstation && noughtyLib.hostHasTag "ripper") [
