@@ -427,12 +427,16 @@ in
     ++ lib.optionals (host.is.workstation && !(noughtyLib.hostHasTag "lima") && host.is.linux) [
       gimp3
       inkscape
+      krita
     ]
     ++ lib.optionals (host.is.workstation && noughtyLib.hostHasTag "gamedev") [
       blenderPackage
     ]
     ++ lib.optionals (host.is.workstation && noughtyLib.hostHasTag "davinci") [
       davinciResolve
+    ]
+    ++ lib.optionals (host.is.workstation && noughtyLib.hostHasTag "photography") [
+      unstable.darktable
     ];
 
   services.easyeffects = lib.mkIf (host.is.workstation && noughtyLib.hostHasTag "studio") {
