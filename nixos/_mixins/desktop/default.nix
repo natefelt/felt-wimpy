@@ -47,6 +47,12 @@ in
 
       catppuccin.plymouth.enable = config.boot.plymouth.enable;
 
+      # ssh key on yubikey
+      environment.shellInit = ''
+        gpg-connect-agent /bye
+        export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
+      '';
+
       programs = {
         # https://wiki.nixos.org/w/index.php?title=Appimage
         # https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-appimageTools
