@@ -7,24 +7,20 @@
 let
   inherit (config.noughty) host;
   username = config.noughty.user.name;
-  scanningApps =
-    if (host.desktop == "plasma") then
-      pkgs.kdePackages.skanpage
-    else
-      [
-        pkgs.simple-scan
-        pkgs.gscan2pdf
-        pkgs.tesseract
-        pkgs.unpaper
-        pkgs.vuescan
-      ];
+  scanningApp = if (host.desktop == "plasma") then pkgs.kdePackages.skanpage else pkgs.simple-scan;
 in
 lib.mkIf (!host.is.iso && !host.is.server) {
   # Only enables auxilary scanning support/packages if
   # config.hardware.sane.enable is true; the master control
   # - https://wiki.nixos.org/wiki/Scanners
   environment = lib.mkIf (config.hardware.sane.enable && host.is.workstation) {
-    systemPackages = [ scanningApps ];
+    systemPackages = [
+      scanningApp
+      pkgs.gscan2pdf
+      pkgs.tesseract
+      pkgs.unpaper
+      pkgs.vuescan
+    ];
   };
 
   hardware.sane = {
