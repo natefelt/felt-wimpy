@@ -9,8 +9,11 @@ let
   inherit (config.noughty) host;
   username = config.noughty.user.name;
   rootlessMode = false;
-  virtualisationEnabled = noughtyLib.isUser [ "martin" ] && host.is.workstation;
-  dockerEnabled = noughtyLib.hostHasTag "workspace";
+  virtualisationEnabled = (
+    (noughtyLib.isUser [ "martin" ] || noughtyLib.isUser [ "nate" ]) && host.is.workstation
+  );
+  # dockerEnabled = noughtyLib.hostHasTag "workspace";
+  dockerEnabled = noughtyLib.hostHasTag "docker";
 
   # Introspect the root filesystem type from disko configuration
   # Docker storage driver recommendations:
