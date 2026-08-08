@@ -326,7 +326,8 @@ workspaces = [5, 9]
 kind = "computer"
 platform = "x86_64-linux"
 formFactor = "laptop"
-tags = ["thinkpad", "fprintd", "zsa"]
+username = "nate"
+tags = ["thinkpad", "dropbox", "fprintd", "zsa"]
 
 [mercury.gpu]
 vendors = ["intel"]
