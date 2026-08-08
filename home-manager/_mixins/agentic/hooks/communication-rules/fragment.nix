@@ -1,19 +1,9 @@
 { lib }:
 let
-  skillPath = ../../assistants/skills/communication-rules/SKILL.md;
-  skillSource = builtins.readFile skillPath;
-  skillParts = lib.splitString "\n---\n" skillSource;
-  frontmatter = lib.head skillParts;
-  hasValidFrontmatter =
-    lib.length skillParts >= 2
-    && lib.hasPrefix "---\n" frontmatter
-    && lib.hasInfix "\nname: communication-rules" frontmatter
-    && lib.hasInfix "\ndescription:" frontmatter;
-  text =
-    if hasValidFrontmatter then
-      lib.trim (lib.concatStringsSep "\n---\n" (lib.tail skillParts))
-    else
-      throw "${toString skillPath} must contain portable communication-rules skill frontmatter.";
+  # The canonical rules body, shared with every other consumer through
+  # compose.nix, which strips the output-style frontmatter from
+  # house-style.md.
+  text = (import ../../assistants/compose.nix { inherit lib; }).houseStyleBody;
 in
 {
   inherit text;
@@ -24,6 +14,17 @@ in
     Communication Rules:
     ${text}
   '';
+
+  # The pointer used on a fresh main thread whose system prompt already carries
+  # this same body, as the Claude Code house-style output style, the Codex
+  # developer_instructions, or the OpenCode and Pi global instructions.
+  # Injecting the full rules again there duplicates them. Which contexts get
+  # this pointer is not assumed: each platform module reports its own carriage
+  # through agentic.houseStyle.inSystemPrompt, and a platform that carries
+  # nothing gets the full reminderPrompt above. A Codex sub-agent always keeps
+  # the full body, because neither an output style nor developer_instructions
+  # reaches a sub-agent context.
+  briefReminderPrompt = "Reminder: the house style in your system prompt is the Communication Rules. Follow it for any prose you produce or write.";
 
   blockMessage = ''
     Blocked. Revise this prose to follow the Communication Rules.

@@ -1,6 +1,6 @@
 # AI Agents
 
-Eleven specialist agents, 60 commands, twenty-four physical skills, and one generated skill - composed by Nix from a single source tree and delivered to each enabled Claude Code, OpenCode, Codex, and Pi Agent client without duplication.
+Eleven specialist agents, 60 commands, twenty-three physical skills, and two generated skills - composed by Nix from a single source tree and delivered to each enabled Claude Code, OpenCode, Codex, and Pi Agent client without duplication.
 
 Developer servers keep Pi Agent resources. Claude Code, OpenCode, and Codex resources are emitted only when those clients are enabled.
 
@@ -13,6 +13,7 @@ The Nix composition is the delivery mechanism, not the strategy. Everything belo
 ```
 ~/.claude/
 ├── rules/instructions.md          # Global instructions (loaded every session)
+├── output-styles/house-style.md   # Communication Rules in the system prompt
 ├── agents/<name>.md               # Agent definitions (selectable with --agent)
 ├── commands/<name>.md             # Slash commands (invocable with /<name>)
 └── skills/<name>/SKILL.md          # Reference knowledge (loaded contextually)
@@ -22,7 +23,7 @@ The Nix composition is the delivery mechanism, not the strategy. Everything belo
 
 ```
 ~/.config/opencode/
-├── AGENTS.md                       # Global instructions (loaded every session)
+├── AGENTS.md                       # Global instructions + house style (loaded every session)
 ├── agents/<name>.md               # Agent definitions (selectable with --agent)
 ├── commands/<name>.md             # Slash commands (invocable with /<name>)
 └── skills/<name>/SKILL.md          # Reference knowledge (loaded contextually)
@@ -32,7 +33,7 @@ The Nix composition is the delivery mechanism, not the strategy. Everything belo
 
 ```
 ~/.pi/agent/
-├── AGENTS.md                       # Global instructions (loaded every session)
+├── AGENTS.md                       # Global instructions + house style (loaded every session)
 ├── agents/<name>.md                # Subagent definitions for pi-subagents
 ├── prompts/<name>.md               # Prompt templates (invocable with /<name>)
 └── skills/<name>/SKILL.md          # Agent Skills (loaded contextually)
@@ -65,7 +66,7 @@ instructions/global.md          ← environment constraints, tool preferences, s
                     └── command prompt  ← single task, may repeat the agent's model pin
 ```
 
-**`instructions/global.md`** is the role-neutral foundation for every platform. It sets delegation triggers, fresh-context defaults, trust boundaries, reference-tool preferences, GitHub safety, LSP guidance, file rules, skill references, and verbatim relay. Full specialist routing and output contracts live in the generated `delegate-task` skill. See [`instructions/README.md`](instructions/README.md) for the research that informs the global rules and the generated skill.
+**`instructions/global.md`** is the role-neutral foundation for every platform. It sets delegation triggers, fresh-context defaults, trust boundaries, reference-tool preferences, GitHub safety, LSP guidance, file rules, skill references, and the relay rules for artefacts and reports. Full specialist routing and output contracts live in the generated `delegate-task` skill. See [`instructions/README.md`](instructions/README.md) for the research that informs the global rules and the generated skill.
 
 Agent prompts inherit the global constraints and add specialisation. Command prompts inherit the agent context and focus on a single task - they stay short because the agent prompt already carries the persona, tools, and constraints. A command can set its own model header, but only Garfield's four commands do.
 
@@ -77,9 +78,20 @@ Agent prompts inherit the global constraints and add specialisation. Command pro
 
 ### Agent Tripwire
 
-The portable `skills/communication-rules/SKILL.md` file is the canonical Communication Rules source. Global instructions, agents, commands, and other skills load it by name instead of receiving copied rule text.
+`styles/house-style/house-style.md` is the canonical Communication Rules source. It carries no frontmatter, so every consumer reads the same body verbatim. Global instructions, agents, commands, and skills refer to the rules by name instead of carrying copied rule text.
 
-The `hooks/communication-rules` mixin strips the skill frontmatter and writes the complete body to `~/.config/agent-communication-rules/communication-rules.md` with the shared scanner assets. Reminders, block messages, correction prompts, and runtime disclosures embed that body. Do not copy the rules into platform modules.
+Each platform takes the body through its own system-prompt channel:
+
+| Platform    | Carrier                                                              |
+| ----------- | -------------------------------------------------------------------- |
+| Claude Code | Output style at `~/.claude/output-styles/house-style.md`, selected by `outputStyle = "house-style"` with `keep-coding-instructions: true` |
+| Codex       | `developer_instructions` in `config.toml`, injected at the developer role; the built-in coding prompt is kept |
+| OpenCode    | Appended to the global instructions in `AGENTS.md`                   |
+| Pi Agent    | Appended to the global instructions in `AGENTS.md`                   |
+
+`compose.nix` also generates the `communication-rules` skill from the same body, adding only the frontmatter that makes it discoverable. The skill stays for command-driven reinforcement and for surfaces with no system-prompt access, such as Codex Cloud. The `delegate-task` packet tells every sub-agent to load it.
+
+The `hooks/communication-rules` mixin reads the style body directly and writes it to `~/.config/agent-communication-rules/communication-rules.md` with the shared scanner assets. Reminders, block messages, correction prompts, and runtime disclosures embed that body. Do not copy the rules into platform modules.
 
 Agent Tripwire is not an agent bypass system. Blocked write, edit, post, and surfaced prose paths must be revised by the agent or stopped. Operator recovery stays outside the agent path: use the normal config disablement mechanism, such as `disableAllHooks`, or rebuild without the Agent Tripwire mixin when a false positive or broken hook needs human recovery.
 
@@ -95,7 +107,7 @@ When the coordinator lacks context, it delegates discovery instead of researchin
 
 ### Response Discipline
 
-The `communication-rules` skill owns response discipline and the hooks enforce it. A single specialist output is relayed verbatim, with intervention only for safety.
+The house style owns response discipline, every platform carries it in the system prompt, and the hooks enforce it. The parent relays an artefact verbatim and never summarises it in place. The parent delivers a report as the answer plus the recommendations, and a long report goes to a file under the `review-report-path` convention, returned as the conclusion plus the path. The parent intervenes only for safety.
 
 ### Standalone Commands
 
@@ -269,13 +281,13 @@ Git workflow specialist enforcing Conventional Commits 1.0.0. Analyses existing 
 
 **Model:** the only pinned agent in the tree. Claude Code takes `model: sonnet` on the agent and on all four commands. Pi takes `claude-sonnet-5` on the Anthropic route, `gpt-5.6-terra` at thinking `medium` on the OpenAI route, and `gemini-3-flash` on Google. Codex takes `gpt-5.6-terra` at reasoning `medium`. Commit message generation is a structured, deterministic task with clear rules, so it does not need the session's reasoning budget.
 
-| Command                | Purpose                                                                  |
-| ---------------------- | ------------------------------------------------------------------------ |
-| `draft-commit-message` | Draft a conventional commit message for the staged or current changes    |
-| `draft-pr-message`     | Draft a conventional commit message summarising the branch for a PR body |
-| `make-commit`          | Draft the message, then create one commit from the durable work          |
-| `make-pr`              | Draft the title and body, open the PR, move Linear to In Review          |
-| `pr-done`              | Update main, drop the worktree and branch, move Linear to Done           |
+| Command                | Purpose                                                                                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `draft-commit-message` | Draft a conventional commit message for the staged or current changes                                                                    |
+| `draft-pr-message`     | Draft a conventional commit message summarising the branch for a PR body                                                                 |
+| `make-commit`          | Draft the message, then create one commit from the durable work                                                                          |
+| `make-pr`              | Draft the title and body, open the PR, move Linear to In Review, and on a work PR request the work review team and apply `ai-review`     |
+| `pr-done`              | Move the merged branch's Linear issues to Done, leave local Git and GitHub state unchanged                                               |
 
 ---
 
@@ -453,14 +465,14 @@ A directory holding both the marker and its plaintext counterpart fails evaluati
 
 ### Skills
 
-Shared skills provide background knowledge and reference material. Most are sourced from `skills/*/SKILL.md`; `delegate-task` is generated from the agent registry so delegation guidance cannot drift from the configured agents.
+Shared skills provide background knowledge and reference material. Most are sourced from `skills/*/SKILL.md`. Two are generated, so their content cannot drift from its source: `delegate-task` from the agent registry, and `communication-rules` from the house style body. A static skill directory with either name is ignored.
 
 **Generated and agent-loaded:**
 
 | Skill                | Loaded by                 | Purpose                                                                                                           |
 | -------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `delegate-task`      | Coordinator or user       | Generated routing, depth, waiting, teardown, packet, response contract, and relay policy                          |
-| `communication-rules` | Every prose-producing path | Concise, plain British English for user-visible prose                                                             |
+| `communication-rules` | Every prose-producing path | Generated from the house style: concise, plain British English for user-visible prose                             |
 | `agentic-repo-capability` | Donatello or user         | Add a repository-local MCP server, skill, or command across supported agent clients                               |
 | `writing-well`       | Casper, Velma             | Composition principles and the AI writing-pattern catalogue                                                       |
 | `write-skill`        | Rosey or user             | Author or update an Agent Skill (`SKILL.md`) - frontmatter, layout, references, progressive disclosure            |

@@ -22,9 +22,11 @@ import { pathToFileURL } from "node:url";
 
 const root = path.resolve(import.meta.dirname, "..");
 const scanner = path.join(root, "scanner.py");
+// The house style is the canonical rules body, the same file `fragment.nix`
+// reads. It carries no frontmatter, so it is used verbatim.
 const rulesSource = path.resolve(
   root,
-  "../../assistants/skills/communication-rules/SKILL.md",
+  "../../assistants/styles/house-style/house-style.md",
 );
 const extension = path.resolve(
   root,
@@ -51,20 +53,6 @@ interface Decision {
 let tempHome: string;
 let strikeDir: string;
 
-function skillBody(source: string): string {
-  const parts = source.split("\n---\n");
-  const frontmatter = parts[0] ?? "";
-  if (
-    parts.length < 2 ||
-    !frontmatter.startsWith("---\n") ||
-    !frontmatter.includes("\nname: communication-rules") ||
-    !frontmatter.includes("\ndescription:")
-  ) {
-    throw new Error(`Invalid Communication Rules skill frontmatter: ${rulesSource}`);
-  }
-  return parts.slice(1).join("\n---\n").trim();
-}
-
 // Build the temp HOME the shim loads its config from, plus a wrapper the shim
 // spawns as `adapterPath pi <event>`. The wrapper execs the real core with a
 // temp strike dir, so the file-backed counter is hermetic and shared across the
@@ -75,7 +63,7 @@ before(() => {
   const configDir = path.join(tempHome, ".pi/agent/extensions/communication-rules");
   fs.mkdirSync(configDir, { recursive: true });
 
-  const rules = skillBody(fs.readFileSync(rulesSource, "utf-8"));
+  const rules = fs.readFileSync(rulesSource, "utf-8").trim();
   const rulesPath = path.join(tempHome, "rules.md");
   const correctionPromptPath = path.join(tempHome, "correction-prompt.md");
   fs.writeFileSync(rulesPath, `${rules}\n`, "utf-8");
@@ -85,27 +73,49 @@ before(() => {
     "utf-8",
   );
 
-  // The wrapper is `adapterPath`: it runs the core with the temp strike dir so
-  // strikes do not leak and survive across the shim's spawns within a test.
-  const wrapper = path.join(tempHome, "core-wrapper");
-  const q = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
+  // The generated policy reports whether Pi carries the house style in its
+  // system prompt, which is what selects the fresh-context reminder. Production
+  // reports it on, because the Pi global instructions carry the body. The
+  // carriage-off file is the same policy with the append gone, used below to
+  // prove the full rules come back.
+  const carriageOn = path.join(tempHome, "policy-pi-on.json");
+  const carriageOff = path.join(tempHome, "policy-pi-off.json");
   fs.writeFileSync(
-    wrapper,
-    [
-      "#!/usr/bin/env bash",
-      "set -euo pipefail",
-      `export TRIPWIRE_STRIKE_DIR=${q(strikeDir)}`,
-      `export TRIPWIRE_REISSUE_DIR=${q(path.join(tempHome, "reissue"))}`,
-      // Isolate the once-per-session injected-rules flag too. Without this a
-      // stale flag from an earlier suite leaks in, making the Tier A injection
-      // assertion order-dependent.
-      `export TRIPWIRE_INJECTED_DIR=${q(path.join(tempHome, "injected"))}`,
-      `exec python3 ${q(scanner)} --rules ${q(rulesPath)} "$@"`,
-      "",
-    ].join("\n"),
+    carriageOn,
+    JSON.stringify({ communicationRules: { houseStyleInSystemPrompt: { pi: true } } }),
     "utf-8",
   );
-  fs.chmodSync(wrapper, 0o755);
+  fs.writeFileSync(
+    carriageOff,
+    JSON.stringify({ communicationRules: { houseStyleInSystemPrompt: { pi: false } } }),
+    "utf-8",
+  );
+
+  // The wrapper is `adapterPath`: it runs the core with the temp strike dir so
+  // strikes do not leak and survive across the shim's spawns within a test.
+  const q = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
+  const writeWrapper = (file: string, policy: string): void => {
+    fs.writeFileSync(
+      file,
+      [
+        "#!/usr/bin/env bash",
+        "set -euo pipefail",
+        `export TRIPWIRE_STRIKE_DIR=${q(strikeDir)}`,
+        `export TRIPWIRE_REISSUE_DIR=${q(path.join(tempHome, "reissue"))}`,
+        // Isolate the once-per-session injected-rules flag too. Without this a
+        // stale flag from an earlier suite leaks in, making the Tier A injection
+        // assertion order-dependent.
+        `export TRIPWIRE_INJECTED_DIR=${q(path.join(tempHome, "injected"))}`,
+        `exec python3 ${q(scanner)} --rules ${q(rulesPath)} --policy-json ${q(policy)} "$@"`,
+        "",
+      ].join("\n"),
+      "utf-8",
+    );
+    fs.chmodSync(file, 0o755);
+  };
+  const wrapper = path.join(tempHome, "core-wrapper");
+  writeWrapper(wrapper, carriageOn);
+  writeWrapper(path.join(tempHome, "core-wrapper-no-carriage"), carriageOff);
 
   fs.writeFileSync(
     path.join(configDir, "config.json"),
@@ -376,6 +386,43 @@ test("Tier A facing: context handler appends to live event.messages", async () =
   assert.ok(Array.isArray(result!.messages), "context should return a messages array");
   assert.equal(result!.messages!.length, 1, "context should append one base-rules message");
   const injected = result!.messages![0] as { content?: string; display?: boolean };
-  assert.match(injected.content ?? "", /Communication Rules:/, "injected message carries the rules");
+  // A fresh context gets the brief pointer, not a second copy of the rules:
+  // Pi's global instructions already carry the house style.
+  assert.match(
+    injected.content ?? "",
+    /^Reminder: the house style in your system prompt is the Communication Rules\./,
+    "injected message points at the house style",
+  );
+  assert.ok(
+    !(injected.content ?? "").includes("## The Cut Pass"),
+    "injected message does not repeat the full rules body",
+  );
   assert.equal(injected.display, false, "injected message is model-only");
+});
+
+test("Fresh-context reminder follows the reported carriage, not an assumption", async () => {
+  // The shim asks the core for `remind-brief pi`, so the reminder text is the
+  // core's answer for Pi. With the carriage reported on, it is the pointer;
+  // with the house style gone from Pi's global instructions, the same call
+  // returns the full rules, so enforcement does not quietly weaken.
+  const onWrapper = path.join(tempHome, "core-wrapper");
+  const offWrapper = path.join(tempHome, "core-wrapper-no-carriage");
+
+  const carried = spawnSync(onWrapper, ["remind-brief", "pi"], { encoding: "utf-8" });
+  assert.equal(carried.status, 0, "remind-brief should exit 0");
+  assert.match(
+    (carried.stdout ?? "").trim(),
+    /^Reminder: the house style in your system prompt is the Communication Rules\./,
+    "a carried house style selects the brief pointer",
+  );
+
+  const dropped = spawnSync(offWrapper, ["remind-brief", "pi"], { encoding: "utf-8" });
+  assert.equal(dropped.status, 0, "remind-brief should exit 0");
+  const text = (dropped.stdout ?? "").trim();
+  assert.match(
+    text,
+    /^Reminder: Follow the Communication Rules/,
+    "no carriage brings the full rules back",
+  );
+  assert.ok(text.includes("## The Cut Pass"), "the full rules body is injected");
 });

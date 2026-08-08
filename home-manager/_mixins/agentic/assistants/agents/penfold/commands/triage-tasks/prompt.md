@@ -27,8 +27,10 @@ The two sweeps differ in coverage, so report them apart: the assignee sweep is w
 2. Run `update-task <issue key>` in the same context. `research-task` files nothing, so `update-task` must see that research as its own session in order to have anything to merge. A sub-agent that runs only one of the two has done nothing useful.
 3. Where the research concludes the issue is a duplicate, is obsolete, or should be dropped, report that as a recommendation and change nothing.
 4. Return a short report only: issue key, what changed, the new status, and any recommendation. No research detail.
+5. Send one progress message to the parent when research completes and `update-task` starts.
+6. Hard deadline 20 minutes for the issue. On reaching it, report the issue key and what is done, then stop.
 
-Human invocation of this command is consent to research and update the issues in the batch, and nothing else: no cancelling, no closing, no creating issues, no GitHub, no Slack. State that authority in every sub-agent packet and name `research-task` and `update-task` in it. Sub-agents run with fresh context and defer without it.
+Human invocation of this command is consent to research and update the issues in the batch, and nothing else: no cancelling, no closing, no creating issues, no GitHub, no Slack. State that authority in every sub-agent packet, as `delegate-task` requires, and name `research-task` and `update-task` in it.
 
 **5. Report.** Each issue ends in Backlog, because `update-task` promotes a `triage`-type status as part of its work. An issue whose sub-agent failed stays in Triage and is picked up by the next run, so re-running this command is safe.
 
@@ -55,6 +57,6 @@ Left in Triage: <n>
 - Members of a parent cohort run in sequence. Never run two children of one parent at once.
 - Never cancel, close, or delete an issue. A duplicate, obsolete, or droppable issue is reported as a recommendation, because that call is the user's.
 - Never create an issue, and never touch GitHub or Slack.
-- Restate the authority in every sub-agent packet. Fresh context does not inherit it.
+- Restate the authority in every sub-agent packet.
 - Ask the user nothing. A blank `$ARGUMENTS` takes the default; an empty queue is reported, then the run stops.
 - British spelling. No hedging language.

@@ -37,6 +37,18 @@ function decide(event: string, payload: unknown): Decision {
   } catch { /* fall through */ }
   return { decision: "block", surface: "B1", notice: "", level: "error", inject_base_rules: false, append_correction: false, block_message: "" };
 }
+// Fresh-context reminder (content, cached). The core answers for `opencode`: a
+// brief pointer when OpenCode's global instructions carry the house style, so
+// the rules are not injected twice, and the full rules when they do not. The
+// full rules file is the fallback when the core cannot supply it.
+let reminderText: string | undefined;
+function reminder(): string {
+  if (reminderText === undefined) {
+    const r = Bun.spawnSync([scannerPath, "remind-brief", "opencode"], { stdout: "pipe", stderr: "pipe" });
+    reminderText = r.exitCode === 0 ? new TextDecoder().decode(r.stdout).trim() : "";
+  }
+  return reminderText || `Communication Rules:\n${readText(rulesPath)}`;
+}
 async function toast(client: PluginClient | undefined, message: string): Promise<void> {
   if (!message) return;
   try { await client?.tui?.showToast?.({ body: { message, variant: "error" } }); } catch { /* fall through */ }
@@ -50,7 +62,7 @@ export const CommunicationRules = async (context: { client?: PluginClient } = {}
       const d = decide("context", input);
       output.system ??= [];
       if (d.inject_base_rules) {
-        const section = `Communication Rules:\n${readText(rulesPath)}`;
+        const section = reminder();
         if (!output.system.includes(section)) output.system.push(section);
       }
       if (d.append_correction) {

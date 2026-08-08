@@ -10,7 +10,7 @@ Human invocation of this command is the user's consent for: commit, push, `gh-re
 
 Forbidden throughout: merge, close, approve, release, force-push, `gh workflow run`, and any change to a PR the user does not own. Never use raw `gh api`; use dedicated subcommands, and `gh-api-safe` for raw reads.
 
-Restate this authority in every sub-agent packet. Sub-agents run with fresh context and will defer without it.
+Restate this authority in every sub-agent packet, as `delegate-task` requires.
 
 ### Preconditions
 
@@ -81,6 +81,8 @@ Workspace guard: the connected Linear instance is personal when the `WW` team, W
 ### Answer reviews
 
 When a review or review comment lands, from a bot or a human, dispatch a fresh sub-agent running `address-code-review` against the PR URL.
+
+Give that sub-agent the same 30 minute deadline as a watcher, and require one progress message when it stops judging and starts fixing. On the deadline it reports the threads answered so far and stops, and the loop dispatches a fresh one.
 
 That command owns the whole cycle. It skips threads already handled, judges each finding, fixes and commits what it accepts, pushes, replies in the thread, and resolves the threads its rules allow. Report what it returns and do nothing further with those threads.
 

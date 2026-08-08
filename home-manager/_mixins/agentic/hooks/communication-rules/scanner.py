@@ -73,6 +73,13 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="mode", required=True)
 
     subparsers.add_parser("remind", help="Print the reminder prompt.")
+    remind_brief_parser = subparsers.add_parser(
+        "remind-brief", help="Print the fresh main-thread reminder prompt for one agent."
+    )
+    # The agent name decides the text: the brief pointer where that platform
+    # carries the house style in its system prompt, the full rules where it does
+    # not. A missing name reads as no carriage, so it prints the full rules.
+    remind_brief_parser.add_argument("agent", nargs="?", default="", help="The core agent name.")
     subparsers.add_parser("block-message", help="Print the user-facing block message.")
 
     scan_text_parser = subparsers.add_parser("scan-text", help="Scan text from an argument or stdin.")
@@ -117,6 +124,15 @@ def main(argv: list[str] | None = None) -> int:
         if config is None:
             config = Config(FALLBACK_RULES_TEXT, None, None, DEFAULT_POLICY)
         return write_message(config.reminder_prompt)
+
+    if args.mode == "remind-brief":
+        # The fresh main-thread reminder. The Pi and OpenCode shims read it from
+        # here, the way they already read the block message, because they consume
+        # the raw Decision and so never see a shaped response. Each passes its
+        # own agent name, so the text follows that platform's carriage.
+        if config is None:
+            config = Config(FALLBACK_RULES_TEXT, None, None, DEFAULT_POLICY)
+        return write_message(config.fresh_context_reminder(args.agent))
 
     if args.mode == "block-message":
         if config is None:

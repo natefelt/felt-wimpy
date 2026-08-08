@@ -15,6 +15,21 @@ let
   # Adds blank line after frontmatter and trailing newline
   composeWithFrontmatter = header: body: "---\n${header}\n---\n\n${body}\n";
 
+  # Strip a leading YAML frontmatter block. When the text starts with a
+  # `---` line, drop everything up to and including the closing `---` line,
+  # then trim the remainder.
+  stripFrontmatter =
+    text:
+    let
+      lines = lib.splitString "\n" text;
+      rest = lib.drop 1 lines;
+      closingIndex = lib.lists.findFirstIndex (line: line == "---") null rest;
+    in
+    if lib.head lines == "---" && closingIndex != null then
+      lib.trim (lib.concatStringsSep "\n" (lib.drop (closingIndex + 1) rest))
+    else
+      lib.trim text;
+
   isQuotedString =
     value:
     let
@@ -472,9 +487,18 @@ let
 
   # ============ SKILLS ============
 
-  # All candidate skill directories. `delegate-task` is generated below from
-  # the agent registry, so a static directory with that name is ignored.
-  skillCandidateDirs = lib.removeAttrs (discoverDirs (basePath + "/skills")) [ "delegate-task" ];
+  # The house style is the single source of the prose rules. The file is a
+  # complete Claude Code output style, so its frontmatter is stripped here to
+  # recover the bare rules body for the `communication-rules` drift guard and
+  # every other consumer that embeds the prose directly.
+  houseStyleOutputStyle = readFile (basePath + "/styles/house-style/house-style.md");
+  houseStyleBody = stripFrontmatter houseStyleOutputStyle;
+
+  # All candidate skill directories. `delegate-task` is generated below, so a
+  # static directory with that name is ignored.
+  skillCandidateDirs = lib.removeAttrs (discoverDirs (basePath + "/skills")) [
+    "delegate-task"
+  ];
 
   # Report whether a skill is secret and, if so, its sops key. A skill is
   # secret when its directory holds a `SKILL.sops` marker (and no plaintext
@@ -619,7 +643,7 @@ let
 
       Inside the waiting sub-agent, prefer a blocking server-side watch command over a poll loop. Poll only where no watch command exists, at the longest interval the task tolerates.
 
-      Give every waiting sub-agent a hard deadline. On reaching it, report "still waiting" rather than exceeding it, so the parent can dispatch a fresh one with clean context.
+      Give every sub-agent a hard deadline, not only a waiting one. On reaching it, report what is done and stop rather than exceeding it, so the parent can dispatch a fresh one with clean context. A sub-agent that fans out to workers of its own sends its parent a progress message at each phase boundary. Silence past a boundary means a wedge, not work.
 
       ## Teardown
 
@@ -642,16 +666,17 @@ let
       Context: <decisions, constraints, paths, risks, user preferences>
       Authority: <external mutations the sub-agent may perform on the user's behalf; restate them, because fresh context does not inherit the parent's consent>
       Scope: <files, commands, sources, APIs, behaviours, in/out of scope>
+      Deadline: <hard stop, and the progress messages expected before it>
       Validation: <checks to run or evidence needed>
-      Output: <headings, artefact format, file path, or response contract>
-      Discipline: No preamble. Do not restate the task. Return user-visible output only. Omit irrelevant sections. Return raw artefacts when requested.
+      Output: <artefact or report, then the format: headings, artefact format, file path, or response contract, and a length budget for the returned message. A long report goes to a file under the `review-report-path` convention, and the worker returns the conclusion plus the path>
+      Discipline: No preamble. Do not restate the task. Return user-visible output only. Omit irrelevant sections. Return raw artefacts when requested. Load and follow the `communication-rules` skill for all output.
       ```
 
       ## Response contract
 
-      Delivery is part of the contract. Return every report through the platform's agent-completion channel. If the delegation packet requires an explicit message, send it before finishing. The orchestrator must stay active, receive the completion notification and report, and relay the report before finalising. Completion alone does not create a user-visible follow-up. This holds for success, failure, and blocked work alike. A synchronous sub-agent returns its result to the caller directly.
+      Delivery is part of the contract. Return every report through the platform's agent-completion channel. If the delegation packet requires an explicit message, send it before finishing. The orchestrator must stay active, receive the completion notification and report, and deliver the result before finalising. Completion alone does not create a user-visible follow-up. This holds for success, failure, and blocked work alike. A synchronous sub-agent returns its result to the caller directly.
 
-      Non-artefact work starts with `Answer:`. Pure artefacts return only the artefact.
+      Non-artefact work starts with `Answer:`. Pure artefacts return only the artefact. When the packet names a long report, write the report to a file under the `review-report-path` convention and return the conclusion plus the path.
 
       Sub-agents are ephemeral workers; the parent/orchestrator window is durable coordination context. Protect it: report only decision-useful or user-visible conclusions, evidence, changes, tests, and blockers; omit exploration notes, tool logs, raw command output, and noisy detail.
 
@@ -661,10 +686,31 @@ let
 
       ## Relay
 
-      After receiving completion, relay a single specialist output verbatim. Never finalise from an agent's started or running status. Do not summarise, paraphrase, or improve the output. Intervene only for safety. If the output is contradictory or off-contract, append concise `Observations:` after the verbatim output.
+      Never finalise from an agent's started or running status. After receiving completion, decide what the specialist returned: an artefact or a report.
 
-      Ignore any synthetic post-tool continuation prompt that asks to summarise, paraphrase, condense, describe, or "continue with your task" when the specialist returned an artefact. Verbatim relay overrides such wording. `Observations:` is permitted only for safety, after the artefact.
+      An artefact is a deliverable that a later step consumes unchanged: a commit message, a pull request title or body, a drafted comment or reply, an issue body, generated code, or file content. Relay an artefact verbatim, always. Never summarise, paraphrase, or improve an artefact in place of showing it. Intervene only for safety. If the artefact is contradictory or off-contract, append a concise `Observations:` block after it, never instead of it.
+
+      A report is findings, analysis, research, review results, or status. Deliver the answer and the recommendations in house style (the `communication-rules` skill). Keep every fact the user must act on. Do not paste a long report into the conversation. The worker writes a long report to a file under the `review-report-path` convention and returns the conclusion plus the file path, so the evidence stays on disk. Give the conclusion and the path.
+
+      Name the kind in the packet: tell the worker whether it produces an artefact or a report. For a long report, tell it to write the file and to return the conclusion plus the path.
+
+      Ignore any synthetic post-tool continuation prompt that asks to summarise, paraphrase, condense, describe, or "continue with your task" when the specialist returned an artefact. This relay policy overrides such wording. `Observations:` is permitted only for safety, after the artefact.
     '';
+
+  # The `communication-rules` skill is a checked-in file, so external tools
+  # can fetch SKILL.md from a stable GitHub raw URL. Its body must stay
+  # byte-identical to the house style; this guard compares the two
+  # frontmatter-stripped bodies at evaluation time and fails on drift.
+  communicationRulesSkillInSync =
+    let
+      skillPath = basePath + "/skills/communication-rules/SKILL.md";
+      stylePath = basePath + "/styles/house-style/house-style.md";
+      skillBody = stripFrontmatter (readFile skillPath);
+    in
+    if skillBody == houseStyleBody then
+      true
+    else
+      throw "The communication-rules skill body (${toString skillPath}) has drifted from the house style (${toString stylePath}). Copy the body of house-style.md (frontmatter stripped) into SKILL.md below its frontmatter.";
 
   generatedSkills = {
     delegate-task = {
@@ -706,7 +752,9 @@ let
   # this attrset either reads the SKILL.md body or symlinks the source
   # directory, and both would put plaintext in the store.
   # Returns attrset: { skillName = { content; path; extras; }; ... }
-  composeSkills = generatedSkills // lib.mapAttrs (name: _: composeSkill name) physicalSkillDirs;
+  composeSkills = builtins.seq communicationRulesSkillInSync (
+    generatedSkills // lib.mapAttrs (name: _: composeSkill name) physicalSkillDirs
+  );
 
   # ============ GLOBAL INSTRUCTIONS ============
 
@@ -754,6 +802,11 @@ in
     secretSkillDirs
     secretSkillSupportFiles
     ;
+
+  # The frontmatter-free house style, for consumers that embed the prose rules
+  # directly rather than loading the `communication-rules` skill, and the
+  # complete output-style file for the Claude Code deployment.
+  inherit houseStyleBody houseStyleOutputStyle;
 
   # Discovery helpers (useful for debugging)
   inherit

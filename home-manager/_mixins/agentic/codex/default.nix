@@ -315,6 +315,13 @@ let
     # rules text, so "none" keeps the vendor tone block from competing.
     personality = "none";
 
+    # Inject the Communication Rules at the developer role, so the prose policy
+    # applies from the first turn without waiting for a skill load. This is
+    # additive: `model_instructions_file` is deliberately left unset, so Codex
+    # keeps its built-in coding prompt, and `personality` deliberately stays
+    # "none" above rather than carrying any of this text.
+    developer_instructions = assistantCompose.houseStyleBody;
+
     # Sandbox: workspace-write confines writes to the current project, /tmp,
     # and the explicit writable roots below. Do not use default_permissions
     # here on Linux: Codex split permission profiles cannot currently combine
@@ -509,6 +516,17 @@ let
   '';
 in
 lib.mkIf (isDeveloper && !host.is.server) {
+  # Report whether Codex carries the house style in its system prompt. The
+  # `developer_instructions` key in codexSettings is the carriage, so the flag
+  # is read back from it: drop or empty that key and the Communication Rules
+  # tripwire falls back to injecting the full rules on a fresh session. A Codex
+  # sub-agent gets the full rules either way, since no developer instructions
+  # reach a sub-agent context.
+  agentic.houseStyle.inSystemPrompt.codex =
+    config.programs.codex.enable
+    && (codexSettings ? developer_instructions)
+    && codexSettings.developer_instructions != "";
+
   home = {
     packages = [
       codexAcpPackage

@@ -10,6 +10,11 @@ let
   inherit (config.noughty) host;
   inherit (pkgs.stdenv.hostPlatform) system;
   fencedEnabled = !host.is.server;
+  # The output style Claude Code is pinned to. The `house-style` value is the
+  # one that carries the Communication Rules in the system prompt, so both the
+  # `settings.outputStyle` value and the tripwire's carriage flag read this
+  # single binding.
+  claudeOutputStyle = "house-style";
   # claude-code package selection (Linux llm-agents vs unstable) lives in
   # overlays/default.nix.
   claudePackage = pkgs.claude-code;
@@ -536,6 +541,13 @@ in
   };
 
   config = lib.mkIf host.is.workstation {
+    # Report whether Claude Code carries the house style in its system prompt.
+    # The pinned output style below is the carriage, so the flag is derived from
+    # it: point it at any other style and the Communication Rules tripwire falls
+    # back to injecting the full rules on a fresh session.
+    agentic.houseStyle.inSystemPrompt."claude-code" =
+      config.programs.claude-code.enable && claudeOutputStyle == "house-style";
+
     home = {
       file = lib.mkIf (lspServers != { }) {
         ".claude/plugins/nix-lsp/.lsp.json".text = builtins.toJSON lspServers;
@@ -761,11 +773,13 @@ in
             # /review and /simplify.
             disableBundledSkills = true;
 
-            # Pin the neutral built-in output style. The Communication Rules
-            # skill and tripwire gate own the prose policy, so the vendor persona stays
-            # Default. Pinning it also stops a stray project or plugin style
-            # being picked up and silently dropping the built-in coding prompt.
-            outputStyle = "Default";
+            # Pin the house-style output style. It carries the Communication
+            # Rules in the system prompt with keep-coding-instructions enabled,
+            # so the prose policy applies without displacing the built-in coding
+            # prompt. Pinning the value also stops a stray project or plugin
+            # style being picked up and taking over. The tripwire's carriage
+            # flag above reads the same binding, so the two cannot drift.
+            outputStyle = claudeOutputStyle;
 
             # Disable Claude Code's built-in auto memory. The user runs a
             # centralised memory system instead. The `CLAUDE_CODE_DISABLE_AUTO_MEMORY`

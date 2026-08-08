@@ -24,9 +24,11 @@ import * as path from "node:path";
 
 const root = path.resolve(import.meta.dir, "..");
 const scanner = path.join(root, "scanner.py");
+// The house style is the canonical rules body, the same file `fragment.nix`
+// reads. It carries no frontmatter, so it is used verbatim.
 const rulesSource = path.resolve(
   root,
-  "../../assistants/skills/communication-rules/SKILL.md",
+  "../../assistants/styles/house-style/house-style.md",
 );
 const pluginSource = path.resolve(
   root,
@@ -66,20 +68,6 @@ interface Hooks {
 let tempDir: string;
 let strikeDir: string;
 let toasts: string[];
-
-function skillBody(source: string): string {
-  const parts = source.split("\n---\n");
-  const frontmatter = parts[0] ?? "";
-  if (
-    parts.length < 2 ||
-    !frontmatter.startsWith("---\n") ||
-    !frontmatter.includes("\nname: communication-rules") ||
-    !frontmatter.includes("\ndescription:")
-  ) {
-    throw new Error(`Invalid Communication Rules skill frontmatter: ${rulesSource}`);
-  }
-  return parts.slice(1).join("\n---\n").trim();
-}
 
 // Load the real plugin with its build-time tokens substituted: the scanner
 // token points at a wrapper that execs the core with temp state dirs, so the
@@ -170,7 +158,7 @@ beforeAll(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "opencode-shim-test-"));
   strikeDir = path.join(tempDir, "strikes");
 
-  const rules = skillBody(fs.readFileSync(rulesSource, "utf-8"));
+  const rules = fs.readFileSync(rulesSource, "utf-8").trim();
   const rulesPath = path.join(tempDir, "rules.md");
   const correctionPromptPath = path.join(tempDir, "correction-prompt.md");
   fs.writeFileSync(rulesPath, `${rules}\n`, "utf-8");
@@ -180,25 +168,47 @@ beforeAll(() => {
     "utf-8",
   );
 
+  // The generated policy reports whether OpenCode carries the house style in
+  // its system prompt, which is what selects the fresh-context reminder.
+  // Production reports it on, because the OpenCode global instructions carry
+  // the body. The carriage-off file is the same policy with the append gone,
+  // used below to prove the full rules come back.
+  const carriageOn = path.join(tempDir, "policy-opencode-on.json");
+  const carriageOff = path.join(tempDir, "policy-opencode-off.json");
+  fs.writeFileSync(
+    carriageOn,
+    JSON.stringify({ communicationRules: { houseStyleInSystemPrompt: { opencode: true } } }),
+    "utf-8",
+  );
+  fs.writeFileSync(
+    carriageOff,
+    JSON.stringify({ communicationRules: { houseStyleInSystemPrompt: { opencode: false } } }),
+    "utf-8",
+  );
+
   // The wrapper is the scanner token: it runs the core with temp state dirs so
   // strikes, reissue flags, and injected-rules flags do not leak and survive
   // across the shim's spawns within a test.
-  const wrapper = path.join(tempDir, "core-wrapper");
   const q = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
-  fs.writeFileSync(
-    wrapper,
-    [
-      "#!/usr/bin/env bash",
-      "set -euo pipefail",
-      `export TRIPWIRE_STRIKE_DIR=${q(strikeDir)}`,
-      `export TRIPWIRE_REISSUE_DIR=${q(path.join(tempDir, "reissue"))}`,
-      `export TRIPWIRE_INJECTED_DIR=${q(path.join(tempDir, "injected"))}`,
-      `exec python3 ${q(scanner)} --rules ${q(rulesPath)} "$@"`,
-      "",
-    ].join("\n"),
-    "utf-8",
-  );
-  fs.chmodSync(wrapper, 0o755);
+  const writeWrapper = (file: string, policy: string): void => {
+    fs.writeFileSync(
+      file,
+      [
+        "#!/usr/bin/env bash",
+        "set -euo pipefail",
+        `export TRIPWIRE_STRIKE_DIR=${q(strikeDir)}`,
+        `export TRIPWIRE_REISSUE_DIR=${q(path.join(tempDir, "reissue"))}`,
+        `export TRIPWIRE_INJECTED_DIR=${q(path.join(tempDir, "injected"))}`,
+        `exec python3 ${q(scanner)} --rules ${q(rulesPath)} --policy-json ${q(policy)} "$@"`,
+        "",
+      ].join("\n"),
+      "utf-8",
+    );
+    fs.chmodSync(file, 0o755);
+  };
+  const wrapper = path.join(tempDir, "core-wrapper");
+  writeWrapper(wrapper, carriageOn);
+  writeWrapper(path.join(tempDir, "core-wrapper-no-carriage"), carriageOff);
 
   // Substitute the plugin's build-time tokens and write the copy the test
   // imports, so it loads the REAL shim logic against the temp wrapper.
@@ -351,5 +361,34 @@ test("Tier A inject: chat.system.transform pushes the rules into live output.sys
   );
   expect(Array.isArray(output.system)).toBe(true);
   expect(output.system!.length).toBe(1);
-  expect(output.system![0]).toMatch(/Communication Rules:/);
+  // A fresh context gets the brief pointer, not a second copy of the rules:
+  // OpenCode's global instructions already carry the house style.
+  expect(output.system![0]).toMatch(
+    /^Reminder: the house style in your system prompt is the Communication Rules\./,
+  );
+  expect(output.system![0]).not.toContain("## The Cut Pass");
+});
+
+test("Fresh-context reminder follows the reported carriage, not an assumption", () => {
+  // The shim asks the core for `remind-brief opencode`, so the reminder text is
+  // the core's answer for OpenCode. With the carriage reported on it is the
+  // pointer; with the house style gone from OpenCode's global instructions the
+  // same call returns the full rules, so enforcement does not quietly weaken.
+  const carried = spawnSync(path.join(tempDir, "core-wrapper"), ["remind-brief", "opencode"], {
+    encoding: "utf-8",
+  });
+  expect(carried.status).toBe(0);
+  expect((carried.stdout ?? "").trim()).toMatch(
+    /^Reminder: the house style in your system prompt is the Communication Rules\./,
+  );
+
+  const dropped = spawnSync(
+    path.join(tempDir, "core-wrapper-no-carriage"),
+    ["remind-brief", "opencode"],
+    { encoding: "utf-8" },
+  );
+  expect(dropped.status).toBe(0);
+  const text = (dropped.stdout ?? "").trim();
+  expect(text).toMatch(/^Reminder: Follow the Communication Rules/);
+  expect(text).toContain("## The Cut Pass");
 });
