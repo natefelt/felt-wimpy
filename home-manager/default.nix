@@ -93,7 +93,7 @@ in
         bebas-neue-rounded-font
         bebas-neue-semi-rounded-font
         bw-fusiona-font
-        boycott-font
+        # boycott-font
         commodore-64-pixelized-font
         corefonts
         digital-7-font
