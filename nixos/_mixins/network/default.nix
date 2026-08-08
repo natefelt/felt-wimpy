@@ -66,9 +66,14 @@ let
     "2a10:50c0::bad1:ff#family.adguard-dns.com"
     "2a10:50c0::bad2:ff#family.adguard-dns.com"
   ];
-
+  feltpadDns = [
+    "10.1.226.11"
+    "10.1.226.157"
+    "10.1.226.247"
+  ];
   fallbackDns = if useDoT == "true" then mullvadDns else adguardDns;
   userDns = {
+    nate = feltpadDns;
     martin = if useDoT == "true" then mullvadBlockmalwareDns else adguardBlockmalwareDns;
     louise = if useDoT == "true" then mullvadBlockmalwareDns else adguardBlockmalwareDns;
     agatha = if useDoT == "true" then mullvadFamilyDns else adguardFamilyDns;
@@ -86,22 +91,25 @@ in
   ];
 
   networking = {
+    # extraHosts = ''
+    #   127.0.0.3      k3d-k3d.localhost
+    #   10.10.10.1     router
+    #   10.10.10.2     re550
+    #   10.10.10.3     tv-living-room
+    #   10.10.10.4     tv-main-bedroom
+    #   10.10.10.6     echo-kitchen
+    #   10.10.10.7     echo-office
+    #   10.10.10.8     echo-agatha
+    #   10.10.10.12    Vonage-HT801 vonage
+    #   10.10.10.13    LaMetric-LM2144 lametric
+    #   10.10.10.15    chimeraos
+    #   10.10.10.19    Hue-Bridge-Office hue-bridge-office
+    #   10.10.10.20    Elgato_Key_Light_Air_DAD4 keylight-left key-left
+    #   10.10.10.21    Elgato_Key_Light_Air_EEE9 keylight-right key-right
+    #   10.10.10.23    small-lamp-bulb
+    # '';
     extraHosts = ''
-      127.0.0.3      k3d-k3d.localhost
-      10.10.10.1     router
-      10.10.10.2     re550
-      10.10.10.3     tv-living-room
-      10.10.10.4     tv-main-bedroom
-      10.10.10.6     echo-kitchen
-      10.10.10.7     echo-office
-      10.10.10.8     echo-agatha
-      10.10.10.12    Vonage-HT801 vonage
-      10.10.10.13    LaMetric-LM2144 lametric
-      10.10.10.15    chimeraos
-      10.10.10.19    Hue-Bridge-Office hue-bridge-office
-      10.10.10.20    Elgato_Key_Light_Air_DAD4 keylight-left key-left
-      10.10.10.21    Elgato_Key_Light_Air_EEE9 keylight-right key-right
-      10.10.10.23    small-lamp-bulb
+
     '';
     firewall = {
       enable = true;
@@ -165,7 +173,7 @@ in
     secrets = {
       psk = lib.mkIf (config.networking.networkmanager.enable && host.network.wifi) {
         mode = "0600";
-        path = "/var/lib/iwd/SoroSuub Centroplex.psk";
+        path = "/var/lib/iwd/FELT.psk";
         sopsFile = ../../../secrets/iwd.yaml;
       };
     };

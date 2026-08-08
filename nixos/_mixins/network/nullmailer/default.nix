@@ -6,7 +6,8 @@
 let
   inherit (config.noughty) host;
   username = config.noughty.user.name;
-  domain = "wimpys.world";
+  # domain = "wimpys.world";
+  domain = "feltpad.casa";
 in
 lib.mkIf (!host.is.iso) {
   environment = {
