@@ -5,10 +5,9 @@
   gnutar,
   autoPatchelfHook,
   glibc,
-  gtk2,
   gtk3,
   libxkbcommon,
-  xorg,
+  libsm,
   libgudev,
   makeDesktopItem,
 }:
@@ -65,10 +64,9 @@ stdenv.mkDerivation {
 
   buildInputs = [
     glibc
-    gtk2
     gtk3
     libxkbcommon
-    xorg.libSM
+    libsm
     libgudev
   ];
 
