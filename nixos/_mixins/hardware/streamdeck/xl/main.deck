@@ -178,8 +178,8 @@
   [keys.widget]
     id = "weather"
     [keys.widget.config]
-      location = "basingstoke"
-      unit = "celsius"
+      location = "saratogasprings"
+      unit = "fahrenheit"
       color = "#fefefe"
       #flatten = true
       #theme = "notomoji"

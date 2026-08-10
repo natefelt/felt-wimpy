@@ -92,15 +92,15 @@ let
     refresh_seconds = 30
 
     [weather]
-    # Open-Meteo (keyless). Basingstoke. With explicit coordinates, geocoding is
+    # Open-Meteo (keyless). Saratoga Springs. With explicit coordinates, geocoding is
     # skipped and `location` is just the displayed place label. Temperature unit is
-    # Celsius (matches the daemon's request).
+    # Fahrenheit.
     enabled = true
-    location = "Basingstoke"
-    latitude = 51.2667
-    longitude = -1.0876
+    location = "Saratoga Springs" # 40°20′34″N 111°54′40″W
+    latitude = 40.3491173
+    longitude = -111.9046567
     refresh_minutes = 15
-    unit = "celsius"
+    unit = "fahrenheit"
 
     [visuals.outputs]
     # UI on one output; others get secure curtains (global default is "all").
