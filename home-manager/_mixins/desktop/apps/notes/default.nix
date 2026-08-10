@@ -14,7 +14,7 @@ lib.mkIf ((noughtyLib.isUser [ "martin" ] || noughtyLib.isUser [ "nate" ]) && ho
       pkgs.heynote
     ]
     ++ lib.optionals host.is.linux [
-      pkgs.notesnook
+      # pkgs.notesnook
     ];
   };
 }
