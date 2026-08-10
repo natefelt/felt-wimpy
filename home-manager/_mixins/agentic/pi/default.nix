@@ -25,27 +25,47 @@ let
     else
       import ../fence/chromium.nix { inherit pkgs; };
   fenceLogging = import ../fence/logging.nix { inherit pkgs; };
-  piMcpAdapterVersion = "2.10.0";
-  # When bumping pi-subagents, verify the tool still uses the `subagent`
-  # name; execution parameters still include `agent`, `task`, `context`, and
-  # `model`; model thinking still travels as a `provider/id:level` suffix; and
-  # `context` still accepts `"fresh"` and `"fork"` with `"fresh"` as the safer
-  # non-forking default. If any of these change, update
-  # `extensions/provider-router/index.ts` and the agent-launch prelude in
-  # `assistants/default.nix` before merging.
-  piSubagentsVersion = "0.31.0";
-  piLensVersion = "3.8.53";
-  piFooterVersion = "0.4.1";
+  # pi-mcp-adapter 2.21.1 requires pi-ai 0.84.1. Keep the newest release
+  # that supports the pinned Pi 0.83.0 runtime.
+  piMcpAdapterVersion = "2.21.0";
+  # When bumping pi-subagents, verify the tool still uses the `subagent` name;
+  # workflow execution still uses `workflowScript`, `runs.run`, and `runs.all`;
+  # child parameters still include `agent`, `task`, and `model`; model thinking
+  # still travels as a `provider/id:level` suffix; and `context` still accepts
+  # `"fresh"` and `"fork"` with `"fresh"` as the safer non-forking default. If
+  # any of these change, update `extensions/provider-router/index.ts` and the
+  # agent-launch prelude in `assistants/default.nix` before merging.
+  piSubagentsVersion = "0.44.0";
+  piLensVersion = "3.8.74";
+  # pi-lens imports the compiler API at runtime, but 3.8.74 lists TypeScript as
+  # a development dependency. Keep it as a direct Pi npm dependency until the
+  # upstream package restores TypeScript to dependencies.
+  piLensTypescriptVersion = "7.0.2";
+  piFooterVersion = "0.5.1";
   piSubCoreVersion = "1.5.0";
-  piLogoVersion = "1.0.0";
-  rpivBtwVersion = "1.20.0";
-  rpivTodoVersion = "1.20.0";
+  piCcHeaderVersion = "0.9.4";
+  rpivBtwVersion = "2.4.0";
+  rpivTodoVersion = "2.4.0";
   piMcpAdapterSource = "npm:pi-mcp-adapter@${piMcpAdapterVersion}";
   piSubagentsSource = "npm:pi-subagents@${piSubagentsVersion}";
   piLensSource = "npm:pi-lens@${piLensVersion}";
+  piLensTypescriptSource = "npm:typescript@${piLensTypescriptVersion}";
   piFooterSource = "npm:pi-footer@${piFooterVersion}";
   piSubCoreSource = "npm:@marckrenn/pi-sub-core@${piSubCoreVersion}";
-  piLogoSource = "npm:pi-logo@${piLogoVersion}";
+  piCcHeaderSource = "npm:pi-cc-header@${piCcHeaderVersion}";
+  piCcHeaderUpstream = pkgs.fetchFromGitHub {
+    owner = "eriiic7z";
+    repo = "pi-cc-header";
+    rev = "v${piCcHeaderVersion}";
+    hash = "sha256-lBYwrsQh2mywAucvOePVgoWtC7jZJIiOlv8r5t6lwm8=";
+  };
+  piCcHeaderPatched =
+    pkgs.runCommand "pi-cc-header-${piCcHeaderVersion}-patched" { nativeBuildInputs = [ pkgs.patch ]; }
+      ''
+        cp -R ${piCcHeaderUpstream} "$out"
+        chmod -R u+w "$out"
+        patch -d "$out" -p1 < ${./patches/pi-cc-header-writable-state.patch}
+      '';
   rpivBtwSource = "npm:@juicesharp/rpiv-btw@${rpivBtwVersion}";
   rpivTodoSource = "npm:@juicesharp/rpiv-todo@${rpivTodoVersion}";
   piAssistant = config.agentic.assistants.pi;
@@ -302,6 +322,7 @@ let
 
     theme = piThemeName;
     quietStartup = true;
+    clearOnStart = true;
     collapseChangelog = true;
     enableInstallTelemetry = false;
     enableAnalytics = false;
@@ -331,10 +352,17 @@ let
       piMcpAdapterSource
       piSubagentsSource
       piLensSource
+      {
+        source = piLensTypescriptSource;
+        extensions = [ ];
+        skills = [ ];
+        prompts = [ ];
+        themes = [ ];
+      }
       piFooterSource
       piSubCoreSource
       {
-        source = piLogoSource;
+        source = piCcHeaderSource;
         extensions = [ ];
       }
       rpivBtwSource
@@ -613,12 +641,18 @@ lib.mkIf (noughtyLib.userHasTag "developer") {
   };
 
   home = {
-    # Pi Lens creates its state directory at startup. Fence cannot allow
-    # creation of this leaf directory without also allowing writes to $HOME, so
-    # create it during Home Manager activation before fenced Pi sessions start.
-    activation.piLensStateDirectory = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      mkdir -p "${config.home.homeDirectory}/.pi-lens"
-      chmod 700 "${config.home.homeDirectory}/.pi-lens"
+    # Create writable state directories before fenced Pi sessions start.
+    activation.piStateDirectories = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      mkdir -p \
+        "${config.home.homeDirectory}/.pi-lens" \
+        "${config.home.homeDirectory}/.pi/agent/state"
+      chmod 700 \
+        "${config.home.homeDirectory}/.pi-lens" \
+        "${config.home.homeDirectory}/.pi/agent/state"
+      if [[ ! -e "${config.home.homeDirectory}/.pi/agent/state/pi-cc-header.json" ]]; then
+        printf '{}\n' > "${config.home.homeDirectory}/.pi/agent/state/pi-cc-header.json"
+      fi
+      chmod 600 "${config.home.homeDirectory}/.pi/agent/state/pi-cc-header.json"
     '';
 
     packages = [
@@ -643,7 +677,11 @@ lib.mkIf (noughtyLib.userHasTag "developer") {
       ".pi/agent/extensions/provider-router/LICENSE".source = ./extensions/provider-router/LICENSE;
       ".pi/agent/extensions/provider-router/README.md".source = ./extensions/provider-router/README.md;
       ".pi/agent/extensions/isolation-status/index.ts".text = piIsolationStatusExtension;
-      ".pi/agent/extensions/pi-logo-filter/index.ts".source = ./extensions/pi-logo-filter/index.ts;
+      ".pi/agent/extensions/pi-cc-header.ts".source = "${piCcHeaderPatched}/extensions/pi-cc-header.ts";
+      ".pi/agent/extensions/prompt-template-display/index.ts".source =
+        ./extensions/prompt-template-display/index.ts;
+      ".pi/agent/extensions/prompt-template-display/types.d.ts".source =
+        ./extensions/prompt-template-display/types.d.ts;
       ".pi/agent/extensions/quota-status/index.ts".source = ./extensions/quota-status/index.ts;
       ".pi/agent/themes/${piThemeName}.json".text = builtins.toJSON piCatppuccinTheme;
     }

@@ -82,24 +82,31 @@ Pi packages are installed through the Home Manager-owned package setting:
 ```json
 {
   "packages": [
-    "npm:pi-mcp-adapter@2.10.0",
-    "npm:pi-subagents@0.31.0",
-    "npm:pi-lens@3.8.53",
-    "npm:pi-footer@0.4.1",
+    "npm:pi-mcp-adapter@2.21.0",
+    "npm:pi-subagents@0.44.0",
+    "npm:pi-lens@3.8.74",
+    {
+      "source": "npm:typescript@7.0.2",
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    },
+    "npm:pi-footer@0.5.1",
     "npm:@marckrenn/pi-sub-core@1.5.0",
     {
-      "source": "npm:pi-logo@1.0.0",
+      "source": "npm:pi-cc-header@0.9.4",
       "extensions": []
     },
-    "npm:@juicesharp/rpiv-btw@1.20.0",
-    "npm:@juicesharp/rpiv-todo@1.20.0"
+    "npm:@juicesharp/rpiv-btw@2.4.0",
+    "npm:@juicesharp/rpiv-todo@2.4.0"
   ]
 }
 ```
 
-Versioned Pi package specs are pinned and skipped by `pi update`. These packages are user-level JavaScript extensions installed by Pi's npm integration under the user-owned npm prefix. `pi-logo` is installed with its package extension disabled so the local `pi-logo-filter` wrapper can constrain startup logos while reusing upstream rendering code.
+Versioned Pi package specs are pinned and skipped by `pi update`. These packages are user-level JavaScript extensions installed by Pi's npm integration under the user-owned npm prefix. `typescript` supplies the compiler API that `pi-lens` imports at runtime but lists only as a development dependency. Its Pi resources are disabled because it is a runtime dependency, not an extension. `pi-cc-header` also has its package extension disabled because Home Manager deploys a patched copy from the pinned `v0.9.4` source.
 
-`pi-logo-filter` keeps only `logo-001` through `logo-009` on random. These are the compact line-art logos that animate with Pi theme colours.
+The patch moves `ccHeader` preferences to the writable `~/.pi/agent/state/pi-cc-header.json` file. Upstream writes those preferences and startup settings to `settings.json`, but Home Manager owns that file as a read-only symlink. Home Manager sets `quietStartup` and `clearOnStart`, so `/hrl` can only explain that limit and cannot change the resource list.
 
 The `juicesharp/rpiv-mono` extensions add native Pi behaviour:
 
@@ -140,13 +147,33 @@ Home Manager deploys local Pi extensions under `~/.pi/agent/extensions/`.
 Pi `subagent` tool calls to provider-specific models declared in assistant
 `header.pi.yaml` files.
 
-`pi-logo-filter` lives at `~/.pi/agent/extensions/pi-logo-filter/`. It imports
-`pi-logo`'s header and animation helpers, but restricts random selection to
-`logo-001` through `logo-009`.
+The patched `pi-cc-header` extension lives at
+`~/.pi/agent/extensions/pi-cc-header.ts`. Its interactive header commands store
+preferences in `~/.pi/agent/state/pi-cc-header.json`. `/hrl` does not change the
+resource list because Home Manager controls the required startup settings.
 
 `quota-status` lives at `~/.pi/agent/extensions/quota-status/`. It listens to
 `sub-core` quota updates and publishes the compact quota segment consumed by
 `pi-footer`.
+
+`prompt-template-display` lives at
+`~/.pi/agent/extensions/prompt-template-display/`. In TUI mode, it discovers
+file-backed commands that Pi reports with the `prompt` source. It displays only
+the original slash invocation while it reads and expands the current
+`sourceInfo.path` with Pi 0.83.0 argument rules. For an idle prompt, it stores
+one raw command and expansion, sends the raw command as a user message, and
+returns a hidden marker from `before_agent_start`. The `context` hook uses the
+marker to replace the nearest earlier user message text with the expansion. It
+keeps attached images and removes the marker. Steer and follow-up input keep the
+hidden custom message path because streaming input does not run
+`before_agent_start`. SDK prompt commands pass through because
+their source paths can be virtual.
+
+Run the focused tests with:
+
+```console
+node --experimental-loader ./home-manager/_mixins/agentic/pi/extensions/prompt-template-display/test-loader.mjs --test home-manager/_mixins/agentic/pi/extensions/prompt-template-display/index.test.ts
+```
 
 `communication-rules` lives at `~/.pi/agent/extensions/communication-rules/`.
 It receives the complete body of the `communication-rules` skill without
@@ -176,7 +203,9 @@ Managed files:
 - `~/.pi/agent/extensions/provider-router/agents.json`
 - `~/.pi/agent/extensions/provider-router/README.md`
 - `~/.pi/agent/extensions/provider-router/LICENSE`
-- `~/.pi/agent/extensions/pi-logo-filter/index.ts`
+- `~/.pi/agent/extensions/pi-cc-header.ts`
+- `~/.pi/agent/extensions/prompt-template-display/index.ts`
+- `~/.pi/agent/extensions/prompt-template-display/types.d.ts`
 - `~/.pi/agent/extensions/quota-status/index.ts`
 - `~/.pi/agent/extensions/communication-rules/index.ts`
 - `~/.pi/agent/extensions/communication-rules/config.json`
