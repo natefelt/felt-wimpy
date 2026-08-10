@@ -436,7 +436,7 @@ in
       davinciResolve
     ]
     ++ lib.optionals (host.is.workstation && noughtyLib.hostHasTag "photography") [
-      unstable.darktable
+      darktable
     ];
 
   services.easyeffects = lib.mkIf (host.is.workstation && noughtyLib.hostHasTag "studio") {
