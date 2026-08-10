@@ -16,5 +16,6 @@ lib.mkIf ((noughtyLib.isUser [ "martin" ] || noughtyLib.isUser [ "nate" ]) && ho
       gnome-firmware
       usbimager
       vaults
+      vorta
     ];
 }
