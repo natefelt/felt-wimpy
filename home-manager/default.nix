@@ -26,7 +26,7 @@ in
     inputs.mac-app-util.homeManagerModules.default
     inputs.nix-index-database.homeModules.nix-index
     inputs.voxtype.homeManagerModules.default
-    ./_mixins/agentic
+    # ./_mixins/agentic
     ./_mixins/development
     ./_mixins/filesync
     ./_mixins/scripts
