@@ -54,11 +54,14 @@ in
 {
   imports = [
     ./browsers
+    ./calibre
     ./chat
+    ./gnucash
     ./media-production
     ./music
     ./notes
     ./office
+    ./ripper
     ./streaming
     ./terminal
     ./utilities
