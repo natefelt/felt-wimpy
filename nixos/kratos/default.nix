@@ -24,18 +24,18 @@
   ];
 
   boot = {
-    initrd = {
-      network = {
-        enable = true;
-        ssh = {
-          enable = true;
-          hostKeys = [ "/etc/ssh/initrd_ssh_host_ed25519_key" ];
-          ignoreEmptyHostKeys = true;
-          port = 2222;
-        };
-      };
-      systemd.enable = true;
-    };
+    #initrd = {
+    #  network = {
+    #    enable = true;
+    #    ssh = {
+    #      enable = true;
+    #      hostKeys = [ "/etc/ssh/initrd_ssh_host_ed25519_key" ];
+    #      ignoreEmptyHostKeys = true;
+    #      port = 2222;
+    #    };
+    #  };
+    #  systemd.enable = true;
+    #};
 
     # Ethernet card detected, but not initialized
     # https://github.com/NixOS/nixos-hardware/issues/1202
