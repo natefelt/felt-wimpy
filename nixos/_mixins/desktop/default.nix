@@ -11,6 +11,7 @@ in
   imports = [
     ./apps
     ./backgrounds
+    ./gnome
     ./hyprland
     ./wayfire
   ];
@@ -21,6 +22,7 @@ in
         icons.enable = lib.mkDefault host.is.workstation;
         mime.enable = lib.mkDefault host.is.workstation;
         sounds.enable = lib.mkDefault host.is.workstation;
+
       };
     }
     (lib.mkIf (host.is.workstation && !host.is.iso) {
@@ -88,6 +90,38 @@ in
       };
 
       security.polkit.enable = lib.mkDefault true;
+
+      xdg.portal.enable = true;
+    })
+    (lib.mkIf (host.is.workstation && host.desktop == "gnome") {
+      xdg.portal = {
+        enable = true;
+        config = {
+          common = {
+            default = [ "gtk" ];
+            # For "Open With" dialogs. GTK portal provides the familiar GNOME-style app chooser.
+            "org.freedesktop.impl.portal.AppChooser" = [ "gtk" ];
+            "org.freedesktop.impl.portal.FileChooser" = [ "gtk" ];
+            # Inhibit is useful for preventing sleep during media playback
+            "org.freedesktop.impl.portal.Inhibit" = [ "gtk" ];
+            # GTK portal gives you proper print dialogs.
+            "org.freedesktop.impl.portal.Print" = [ "gtk" ];
+            # Security/credentials
+            "org.freedesktop.impl.portal.Secret" = [ "gnome-keyring" ];
+            # GTK portal provides desktop settings that GTK apps query (fonts, themes, colour schemes).
+            "org.freedesktop.impl.portal.Settings" = [ "gtk" ];
+          };
+        };
+        # Add xset to satisfy xdg-screensaver requirements
+        configPackages = [
+          pkgs.xset
+        ];
+        extraPortals = [
+          pkgs.xdg-desktop-portal
+          pkgs.xdg-desktop-portal-gtk
+          pkgs.xdg-desktop-portal-gnome
+        ];
+      };
     })
   ];
 }

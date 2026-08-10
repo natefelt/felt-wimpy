@@ -317,7 +317,6 @@ in
       displayManager = {
         gdm = {
           enable = true;
-          # autoSuspend = false;
         };
       };
       gnome = {

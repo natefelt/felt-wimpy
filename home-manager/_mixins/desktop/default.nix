@@ -12,6 +12,7 @@ in
   # Import the DE specific configuration; each compositor gates itself internally
   imports = [
     ./apps
+    ./compositor/gnome
     ./compositor/hyprland
     ./compositor/wayfire
   ];
@@ -19,7 +20,7 @@ in
   config = lib.mkIf host.is.workstation (
     let
       buttonLayout =
-        if config.wayland.windowManager.hyprland.enable then ":appmenu" else ":close,minimize,maximize";
+        if config.wayland.windowManager.hyprland.enable then ":appmenu" else ":minimize,maximize,close";
       clockFormat = "24h";
       cursorSize = 32;
       gtkCatppuccinThemeName = "catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-standard";
@@ -234,6 +235,9 @@ in
           ]
           ++ lib.optionals config.wayland.windowManager.wayfire.enable [
             pkgs.xdg-desktop-portal-wlr
+          ]
+          ++ lib.optionals (host.desktop == "gnome") [
+            pkgs.xdg-desktop-portal-gnome
           ];
           xdgOpenUsePortal = true;
         };
