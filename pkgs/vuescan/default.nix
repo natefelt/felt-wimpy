@@ -48,10 +48,6 @@ stdenv.mkDerivation {
     # version 9.8
     url = "https://www.hamrick.com/files/vuex6498.tgz";
     hash = "sha256-hlu3wY/QnRhPe86pZf6LosLk0Qf1TBR3AxEuDr2vbl0=";
-
-    # version 9.7
-    # url = "https://www.hamrick.com/oldfiles/vuex6497.tgz";
-    # hash = "sha256-Jx0jw+x9xkckDPS0DXCEY2OuwsnWZ1ZHyk8L8qrG3Qk=";
   };
 
   # Stripping breaks the program
