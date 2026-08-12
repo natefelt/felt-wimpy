@@ -31,7 +31,7 @@ in
     brave = {
       enable = host.is.darwin && host.is.workstation && !isWorkspace;
       extensions =
-        if (noughtyLib.isUser [ "martin" ]) then basicExtensions ++ advancedExtensions else basicExtensions;
+        if (noughtyLib.isUser [ "martin" ] || noughtyLib.isUser ["nate"]) then basicExtensions ++ advancedExtensions else basicExtensions;
     };
   };
 }

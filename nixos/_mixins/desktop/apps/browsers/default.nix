@@ -83,7 +83,7 @@ in
         # - chromium.enable just enables the Chromium policies.
         enable = true;
         extensions =
-          if (lib.elem username forMartin) then
+          if ((lib.elem username forMartin) || (lib.elem username forNate)) then
             essentialExtensions ++ extraExtensions
           else
             essentialExtensions;
@@ -117,7 +117,6 @@ in
           "ShowFullUrlsInAddressBar" = true;
           "SpellcheckEnabled" = true;
           "SpellcheckLanguage" = [
-            "en-GB"
             "en-US"
           ];
           # Cloud Reporting
@@ -170,7 +169,6 @@ in
       firefox = {
         enable = true;
         languagePacks = [
-          # "en-GB"
           "en-US"
         ];
         package = pkgs.firefox;
