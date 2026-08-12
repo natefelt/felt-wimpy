@@ -28,11 +28,11 @@
     sidra.inputs.nixpkgs.follows = "nixpkgs";
     veila.url = "github:naurissteins/Veila/0.4.2";
     veila.inputs.nixpkgs.follows = "nixpkgs";
-    concord.url = "github:chojs23/concord/v2.5.3";
+    concord.url = "github:chojs23/concord/v2.5.6";
     concord.inputs.nixpkgs.follows = "nixpkgs-unstable";
     concord.inputs.rust-overlay.follows = "rust-overlay";
     concord.inputs.flake-utils.follows = "flake-utils";
-    paseo.url = "github:getpaseo/paseo/v0.2.5";
+    paseo.url = "github:getpaseo/paseo/v0.3.1";
     paseo.inputs.nixpkgs.follows = "nixpkgs-unstable";
     voxtype.url = "github:peteonrails/voxtype/v0.7.5";
     voxtype.inputs.nixpkgs.follows = "nixpkgs-unstable";

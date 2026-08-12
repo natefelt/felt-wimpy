@@ -138,16 +138,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1785856516,
-        "narHash": "sha256-lngW3ZOltQoOp16RGeD2RN94oktnnLDahYpZ8r114qc=",
+        "lastModified": 1786108652,
+        "narHash": "sha256-m74ar1ue0Cl7G5QYeuzyzcgt4myQQUIULwLLol23lBA=",
         "owner": "chojs23",
         "repo": "concord",
-        "rev": "9a35c09214b9bd8e79c535cf0d3465b14dc69f29",
+        "rev": "be7d750b7793ff2bb6ebc533cb1188e6123393cb",
         "type": "github"
       },
       "original": {
         "owner": "chojs23",
-        "ref": "v2.5.3",
+        "ref": "v2.5.6",
         "repo": "concord",
         "type": "github"
       }
@@ -927,16 +927,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1785410560,
-        "narHash": "sha256-3IMEyJS0z83peC1Vzvtj2m+7hm3Uss1qOoE5sMGFITM=",
+        "lastModified": 1786275033,
+        "narHash": "sha256-m97Pf857LNv871b95cJ2y34OFxoES8JsWsp0wD3Em4I=",
         "owner": "getpaseo",
         "repo": "paseo",
-        "rev": "6fc491e6220fba6543bbbe4bf1b1f58cfe59228b",
+        "rev": "bfec7ac3adc5e8835e873ee75c7b325af6c7a8c3",
         "type": "github"
       },
       "original": {
         "owner": "getpaseo",
-        "ref": "v0.2.5",
+        "ref": "v0.3.1",
         "repo": "paseo",
         "type": "github"
       }
